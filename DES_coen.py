@@ -60,7 +60,7 @@ def person(env, name, queue, mu):
 
 	# compute the task time
 	task_time = -np.log(np.random.random()) / mu
-	print("{} arrives at queue {} with task time {}".format(name, arrival, task_time))
+	print("{} arrives at queue at {} with task time {:.2f}".format(name, arrival, task_time))
 
 	# handle priority
 	if not queue.priority:
@@ -70,7 +70,7 @@ def person(env, name, queue, mu):
 
 			# request accepted, server entered
 			enter = env.now
-			print("{} is served at {}".format(name, enter))
+			print("{} is served at {:.2f}".format(name, enter))
 			yield env.process(queue.task(task_time))
 
 			# waiting time
@@ -80,12 +80,14 @@ def person(env, name, queue, mu):
 			yield request
 
 			enter = env.now
-			print("{} is served at {}".format(name, enter))
+			print("{} is served at {:.2f}".format(name, enter))
 			yield env.process(queue.task(task_time))
 
 			wt.append(enter - arrival)
 
-def setup(env, num_servers, lamda, mu, priority):
+
+
+def setup(env, num_servers, lamda, mu, priority, max_persons):
 	"""
 	sets up the system
 
@@ -102,15 +104,24 @@ def setup(env, num_servers, lamda, mu, priority):
 			prioritize the shortest tasks
 	"""
 	queue = Queue(env, num_servers, priority)
-	i = 0
-	while True:
+	i = 1
+	yield env.timeout(-np.log(np.random.random()) / lamda)
+	env.process(person(env,i,queue, mu))
+
+	while i < max_persons:
+
 		# compute time of arrival of next person
+		# print(env.peek())
+		print(env.now)
+
 		yield env.timeout(-np.log(np.random.random()) / lamda)
+
 		i += 1
+		
 		env.process(person(env,i,queue, mu))
+		
 
-
-def compute_avg_wt(servers, lamda, mu, t_lim, sims, priority = False):
+def compute_avg_wt(servers, lamda, mu, max_persons, sims, priority = False):
 	"""
 	compute the average waiting time for a scala of 
 	servers and values for lamda and plot the results
@@ -136,8 +147,9 @@ def compute_avg_wt(servers, lamda, mu, t_lim, sims, priority = False):
 				wt = []
 
 				env = simpy.Environment()
-				env.process(setup(env, n_servers, l * n_servers, mu, priority))
-				env.run(until=t_lim)
+				env.process(setup(env, n_servers, l * n_servers, mu, priority, max_persons))
+
+				env.run(None)
 				mean_wt.append(np.mean(wt))
 
 			server_wt.append(np.mean(mean_wt))
@@ -166,13 +178,12 @@ if __name__ == "__main__":
 	wt = []
 	servers_l = [1, 2, 4]
 	lamda_l = np.linspace(0.8, 1.2, 6)
-	
-	compute_avg_wt(servers_l, lamda_l, 1, 40, 100)
+	compute_avg_wt(servers_l, lamda_l, 1, 50, 6)
 
 	# M/M/1 queue with shortest job first scheduling
-	compute_avg_wt([1], lamda_l, 1, 40, 100, True)
+	compute_avg_wt([1], lamda_l, 1, 50, 6, True)
 	plt.show()
-	
+
 	# global wt
 	# wt = []
 	# env = simpy.Environment()
