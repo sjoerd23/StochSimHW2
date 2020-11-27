@@ -1,12 +1,6 @@
 import simpy
-import numpy as np 
-import matplotlib.pyplot as plt 
-
-# 1) Derive that the average waiting time is shorter for an M/M/2 queue 
-#    with a system load rho and processor capacity mu than for a single
-#    M/M/1 queue with the same load characteristics (n-fold lower arrival
-#    rate)
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 class Queue(object):
@@ -25,7 +19,7 @@ class Queue(object):
 		priority : boolean
 			prioritize the shortest tasks
 		"""
-		self.env = env 
+		self.env = env
 		self.priority = priority
 		if not priority:
 			self.server = simpy.Resource(env, num_servers)
@@ -34,7 +28,7 @@ class Queue(object):
 
 	def task(self, task_time):
 		"""
-		execute a task 
+		execute a task
 		"""
 		yield self.env.timeout(task_time)
 
@@ -42,7 +36,7 @@ class Queue(object):
 def person(env, name, queue, mu):
 	"""
 	a function to represent a person joining the queue and
-	performing a task when specified. 
+	performing a task when specified.
 
 	Args:
 		name : int
@@ -86,12 +80,11 @@ def person(env, name, queue, mu):
 			wt.append(enter - arrival)
 
 
-
 def setup(env, num_servers, lamda, mu, priority, max_persons):
 	"""
 	sets up the system
 
-	Args: 
+	Args:
 		env : Environment
 			simpy.environment to host the processes
 		num_servers : int
@@ -110,20 +103,15 @@ def setup(env, num_servers, lamda, mu, priority, max_persons):
 
 	while i < max_persons:
 
-		# compute time of arrival of next person
-		# print(env.peek())
-		print(env.now)
-
 		yield env.timeout(-np.log(np.random.random()) / lamda)
-
+		
 		i += 1
-		
 		env.process(person(env,i,queue, mu))
-		
+
 
 def compute_avg_wt(servers, lamda, mu, max_persons, sims, priority = False):
 	"""
-	compute the average waiting time for a scala of 
+	compute the average waiting time for a scala of
 	servers and values for lamda and plot the results
 
 	Args:
@@ -133,7 +121,7 @@ def compute_avg_wt(servers, lamda, mu, max_persons, sims, priority = False):
 			values for lamda to conduct the simulation with
 		mu : float
 			mean task time
-		t_lim : int 
+		t_lim : int
 			max time simulated, stops all processes after
 		sims : int
 			number of simulation for each combination (servers, lamda)
@@ -158,13 +146,9 @@ def compute_avg_wt(servers, lamda, mu, max_persons, sims, priority = False):
 		plt.xlabel("lamda [-]")
 		plt.ylabel("mean waiting time [-]")
 	plt.legend()
-	# plt.show()
-
 
 
 if __name__ == "__main__":
-	# M/M/c - FIFO
-	# for c = [1, 2, 4]
 
 	# lambda = arrival rate into the system as s whole
 	# mu = the capacity of each of n equal servers
@@ -177,21 +161,14 @@ if __name__ == "__main__":
 	global wt
 	wt = []
 	servers_l = [1, 2, 4]
-	lamda_l = np.linspace(0.8, 1.2, 6)
-	compute_avg_wt(servers_l, lamda_l, 1, 50, 6)
+	lamda_l = np.linspace(0.6, 1, 6)
+	mu = 1
+	max_persons = 50
+	sims = 6
+
+	# M/M/n queue without priority
+	compute_avg_wt(servers_l, lamda_l, mu, max_persons, sims)
 
 	# M/M/1 queue with shortest job first scheduling
-	compute_avg_wt([1], lamda_l, 1, 50, 6, True)
+	compute_avg_wt([1], lamda_l, mu, max_persons, sims, priority=True)
 	plt.show()
-
-	# global wt
-	# wt = []
-	# env = simpy.Environment()
-	# env.process(setup(env, 1,  1, 1, True))
-	# env.run(until=20)
-	# print(env.active_process)
-
-
-
-
-
