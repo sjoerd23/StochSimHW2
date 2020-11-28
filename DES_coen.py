@@ -34,7 +34,7 @@ class Queue(object):
 		yield self.env.timeout(task_time)
 
 
-def person(env, name, queue, mu):
+def person(env, name, queue, mu, serv_t_dist):
 	"""
 	a function to represent a person joining the queue and
 	performing a task when specified.
@@ -54,7 +54,18 @@ def person(env, name, queue, mu):
 	arrival = env.now
 
 	# compute the task time
-	task_time = -np.log(np.random.random()) / mu
+	if serv_t_dist == "M":
+		task_time = -np.log(np.random.random())
+	elif serv_t_dist == "D":
+		task_time = 1
+	elif serv_t_dist == "LT":
+		x = np.random.random()
+		if x < 0.75:
+			task_time = -np.log(np.random.random()) / 1
+		else:
+			task_time = -np.log(np.random.random()) / 5
+	else:
+		raise ValueError("Invalid type of service time distribution")
 	# print("{} arrives at queue at {} with task time {:.2f}".format(name, arrival, task_time))
 
 	# handle priority
@@ -81,7 +92,7 @@ def person(env, name, queue, mu):
 			wt.append(enter - arrival)
 
 
-def setup(env, num_servers, lamda, mu, priority, max_persons):
+def setup(env, num_servers, lamda, mu, priority, max_persons, serv_t_dist):
 	"""
 	sets up the system
 
@@ -100,17 +111,37 @@ def setup(env, num_servers, lamda, mu, priority, max_persons):
 	queue = Queue(env, num_servers, priority)
 	i = 1
 	yield env.timeout(-np.log(np.random.random()) / lamda)
-	env.process(person(env,i,queue, mu))
+	env.process(person(env,i,queue, mu, serv_t_dist))
 
 	while i < max_persons:
 
 		yield env.timeout(-np.log(np.random.random()) / lamda)
 
 		i += 1
-		env.process(person(env,i,queue, mu))
+		env.process(person(env,i,queue, mu, serv_t_dist))
 
+def simulation(servers, rho, priority, max_persons, serv_t_dist):
+	global wt
+	wt = []
 
-def compute_avg_wt(servers, lamda, mu, max_persons, sims, priority=False):
+	env = simpy.Environment()
+
+	# if serv_t_dist == "M":
+	# 	lamda_load = l * servers
+	# elif serv_t_dist == "D":
+	# 	lamda_load = l * servers
+	# elif serv_t_dist == "LT":
+	# 	lamda_load = l * ((5 / 4) + (3 / 4)) * servers / 2
+
+	mu_d = {"M": 1, "D": 1, "LT" : 2}
+	lamda_eff = mu_d[serv_t_dist] *  rho * servers
+	mu = mu_d[serv_t_dist]
+	env.process(setup(env, servers,  lamda_eff, mu, priority, max_persons, serv_t_dist))
+
+	env.run(None)
+	return wt 
+
+def compute_avg_wt(servers, rho_l, max_persons, sims, priority=False, serv_t_dist = "M"):
 	"""
 	compute the average waiting time for a scala of
 	servers and values for lamda and plot the results
@@ -129,29 +160,63 @@ def compute_avg_wt(servers, lamda, mu, max_persons, sims, priority=False):
 		sims : int
 			number of simulation for each combination (servers, lamda)
 	"""
+
+
+
 	for n_servers in servers:
 		server_wt = []
-		for l in lamda:
+		for rho in rho_l:
 			mean_wt = []
 			for _ in range(sims):
-				global wt
-				wt = []
-
-				env = simpy.Environment()
-				env.process(setup(env, n_servers, l * n_servers, mu, priority, max_persons))
-
-				env.run(None)
-				mean_wt.append(np.mean(wt))
+				waiting_time = simulation(n_servers, rho, priority, max_persons, serv_t_dist)
+				mean_wt.append(np.mean(waiting_time))
 
 			server_wt.append(np.mean(mean_wt))
-
-		plt.plot(lamda, server_wt, label='{} servers'.format(n_servers))
-		plt.xlabel("lamda [-]")
+		
+		plt.plot(rho_l, server_wt, label='{} servers, servicet dist = {}'.format(n_servers, serv_t_dist))
+		plt.xlabel("rho [-]")
 		plt.ylabel("mean waiting time [-]")
 	plt.legend()
 
+def wt_distribution(servers, rho_l, max_persons, sims_l, priority=False, serv_t_dist = "M"):
+	"""
+	compute the average waiting time for a scala of
+	servers and values for lamda and plot the results
 
-def convergence_avg_wt(servers, lamda, mu, sims, priority=False):
+	Args:
+		servers : int
+			number of servers to conduct the simulation with
+		rho_l : list
+			values for rho to conduct the simulation with
+		max_persons : int
+			max persons in system
+		max_persons : list
+			maximum number of persons to arrive
+		sims_l : int
+			number of simulations for each combination 
+	"""
+	
+
+
+	for rho in rho_l:
+		server_wt = []
+		for max_p in max_persons:
+			print(max_p)
+			for sims in sims_l:
+				waiting_time_dist = []
+				for _ in range(sims):
+					waiting_time = simulation(servers, rho, priority, max_p, serv_t_dist)
+					waiting_time_dist.append(np.mean(waiting_time))
+
+				plt.hist(waiting_time_dist, label="max_p: {}, sims: {}".format(max_p, sims), alpha = 0.3, density=True)
+	# 		server_wt.append(np.mean(mean_wt))
+		
+	# 	plt.plot(lamda, server_wt, label='{} servers'.format(n_servers))
+	# 	plt.xlabel("lamda [-]")
+	# 	plt.ylabel("mean waiting time [-]")
+	plt.legend()
+
+def convergence_avg_wt(servers, rho_l, sims, priority=False, serv_t_dist = "M"):
 	"""
 	compute the convergence of the waiting time
 
@@ -171,7 +236,7 @@ def convergence_avg_wt(servers, lamda, mu, sims, priority=False):
 	"""
 
 	n_servers = servers[0]
-	l = lamda[0]
+	rho = rho_l[0]
 
 	epsilon = 0.1
 	n_repetitions = 10
@@ -183,11 +248,7 @@ def convergence_avg_wt(servers, lamda, mu, sims, priority=False):
 		while abs(mean_wt[-1] - mean_wt[-2]) > epsilon:
 			sim_mean_wt = []
 			for _ in range(sims):
-				global wt
-				wt = []
-				env = simpy.Environment()
-				env.process(setup(env, n_servers, l*n_servers, mu, priority, max_persons))
-				env.run(None)
+				waiting_time = simulation(n_servers, rho, priority, max_persons, serv_t_dist)
 
 				sim_mean_wt.append(np.mean(wt))
 			mean_wt.append(np.mean(sim_mean_wt))
@@ -214,21 +275,57 @@ if __name__ == "__main__":
 	##################################################################################
 	global wt
 	wt = []
+
+	# servers_l = [1, 2, 4]
+	# rho_l = np.linspace(0.6, 1.2, 8)
+	# max_persons = 500
+	# sims = 10
+
+	# # M/M/n queue without priority
+	# compute_avg_wt(servers_l, rho_l, max_persons, sims)
+
+	# # # M/M/1 queue with shortest job first scheduling
+	# compute_avg_wt([1], rho_l, max_persons, sims, priority=True)
+	
+
+	# servers_l = [1]
+	# rho_l = [0.9]
+
+	# sims = 50
+	# convergence_avg_wt(servers_l, rho_l, sims)
+
+
+
 	servers_l = [1, 2, 4]
-	lamda_l = np.linspace(0.6, 1, 2)
-	mu = 1
-	max_persons = 10
-	sims = 6
+	rho_l = np.linspace(0.6, 1, 6)
+	max_persons = 200
+	sims = 50
 
 	# M/M/n queue without priority
-	compute_avg_wt(servers_l, lamda_l, mu, max_persons, sims)
+	plt.figure()
+	compute_avg_wt(servers_l, rho_l, max_persons, sims, serv_t_dist = "M")
 
-	# M/M/1 queue with shortest job first scheduling
-	compute_avg_wt([1], lamda_l, mu, max_persons, sims, priority=True)
+	plt.figure()
+	compute_avg_wt(servers_l, rho_l, max_persons, sims, serv_t_dist = "D")
+
+	plt.figure()
+	compute_avg_wt(servers_l, rho_l, max_persons, sims, serv_t_dist = "LT")
+
+
+
+	##################################################################################
+	# distribution of mean waiting times
+	# used to determine whether the system has entered the steady state
+	# is dependent on sims, rho and max_persons
+	##################################################################################
+	# global wt
+	# wt = []
+	# servers = 1
+	# rho_l = [0.1]9
+	# max_persons = [100, 1000]
+	# sims = [500]
+	# wt_distribution(servers, rho_l, max_persons, sims, serv_t_dist = "M")
 	plt.show()
 
-	servers_l = [1]
-	lamda_l = [0.9]
-	mu = 1
-	sims = 50
-	convergence_avg_wt(servers_l, lamda_l, mu, sims)
+
+
