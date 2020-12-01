@@ -1,7 +1,7 @@
 # StochSimHW2
 Stochastic Simulation Assignment 2
 
-See [Assignment 2 - DES simulation assignment.pdf](https://github.com/sjoerd23/StochSimHW1/blob/main/Assignment%201%20-%20MANDELBROT.pdf) for the complete assigment.
+See [Assignment 2 - DES simulation assignment.pdf](https://github.com/sjoerd23/StochSimHW2/blob/main/DES%20simulation%20assignment.pdf) for the complete assigment.
 
 Authors:
 - Sjoerd Terpstra *(11251980, sjoerd.terpstra@student.uva.nl)*
