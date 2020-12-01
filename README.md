@@ -16,3 +16,5 @@ command-line: python DES.py
 ### Changing parameters
 If you want to experiment with different setups for the simulation, open DES.py. In the main() function all adjustable parameters are visible.
 
+### Plotting
+The plots in the report are created with plot.py. It requires the filenames inside the code. The current filenames correspond with the filenames that DES.py saves the data to.
