@@ -142,6 +142,10 @@ def simulation(servers, rho, priority, max_persons, serv_t_dist):
 			max arrivals handled
 		serv_t_dist : str
 			service time distribution
+
+	Returns:
+		wt : global list
+			waiting times
 	"""
 	global wt
 	wt = []
@@ -174,6 +178,10 @@ def compute_avg_wt(servers, rho_l, max_persons, sims, priority=False, serv_t_dis
 			service time distribution
 		truncation : int
 			number of waiting times truncated from the start
+
+	Returns:
+		df : panda dataframe
+			dataframe with the mean waiting times per experiment
 	"""
 
 	df = pd.DataFrame()
