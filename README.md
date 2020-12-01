@@ -10,6 +10,9 @@ Authors:
 ## Usage
 Python version 3.8.3, older Python 3.x versions should work.
 
+### Dependencies
+pip install -r requirements.txt
+
 ### Execution
 command-line: python DES.py
 
