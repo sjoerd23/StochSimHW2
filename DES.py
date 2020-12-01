@@ -1,4 +1,4 @@
-# Assignment 2 
+# Assignment 2
 # Stochastic simulation DES simulation assignment
 # Sjoerd Terpstra
 # Coen Lenting
@@ -7,7 +7,7 @@ import simpy
 import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
-import pandas as pd 
+import pandas as pd
 
 class Queue(object):
 	"""
@@ -16,14 +16,13 @@ class Queue(object):
 	"""
 	def __init__(self, env, num_servers, priority):
 		"""
-		Args
-		----------
-		env : Environment
-			simpy.environment to host the processes
-		num_servers : int
-			number of servers
-		priority : boolean
-			prioritize the shortest tasks
+		Args:
+			env : Environment
+				simpy.environment to host the processes
+			num_servers : int
+				number of servers
+			priority : boolean
+				prioritize the shortest tasks
 		"""
 		self.env = env
 		self.priority = priority
@@ -35,6 +34,9 @@ class Queue(object):
 	def task(self, task_time):
 		"""
 		execute a task
+		Args:
+			task_time : float
+				time needed to perform the task
 		"""
 		yield self.env.timeout(task_time)
 
@@ -42,7 +44,7 @@ class Queue(object):
 def person(env, name, queue, mu, serv_t_dist):
 	"""
 	a function to represent a person joining the queue and
-	performing a task when specified.
+	performing a task when specified. Appends the waiting time to the global list wt.
 
 	Args:
 		name : int
@@ -53,8 +55,6 @@ def person(env, name, queue, mu, serv_t_dist):
 			mean task time
 		serv_t_dist : str
 			service time distribution
-
-	Appends the waiting time to the global list wt
 	"""
 
 	# time of arrival
@@ -152,7 +152,7 @@ def simulation(servers, rho, priority, max_persons, serv_t_dist):
 	lamda_eff = mu * rho * servers
 	env.process(setup(env, servers,  lamda_eff, mu, priority, max_persons, serv_t_dist))
 	env.run(None)
-	return wt 
+	return wt
 
 def compute_avg_wt(servers, rho_l, max_persons, sims, priority=False, serv_t_dist = "M", truncation = 0):
 	"""
@@ -192,7 +192,7 @@ def compute_avg_wt(servers, rho_l, max_persons, sims, priority=False, serv_t_dis
 			df = df.append(new_row, ignore_index = True)
 			server_wt.append(np.mean(mean_wt))
 			conf_int.append(1.96 * np.std(mean_wt, ddof=1) / np.sqrt(sims))
-		
+
 		plt.errorbar(rho_l, server_wt, yerr = conf_int, label='{} servers, servicet dist = {}'.format(n_servers, serv_t_dist))
 		plt.xlabel("rho [-]")
 		plt.ylabel("mean waiting time [-]")
@@ -212,7 +212,7 @@ def wt_distribution(servers, rho_l, max_persons, sims_l, priority=False, serv_t_
 		max_persons : list
 			maximum number of persons to arrive
 		sims_l : int
-			number of simulations for each combination 
+			number of simulations for each combination
 		priority : boolean
 			prioritize the shortest tasks
 		serv_t_dist : str
@@ -229,7 +229,7 @@ def wt_distribution(servers, rho_l, max_persons, sims_l, priority=False, serv_t_
 				for _ in range(sims):
 					waiting_time = simulation(servers, rho, priority, max_p, serv_t_dist)
 					waiting_time_dist.append(np.mean(waiting_time))
-					
+
 					waiting_time_dist_trunc.append(np.mean(waiting_time[int(max_p * 0.3):]))
 
 				if len(rho_l) > 1:
@@ -250,7 +250,7 @@ if __name__ == "__main__":
 	servers_l = [1, 2, 4]
 	rho_l1 = np.linspace(0.1, 0.5, 2)
 	rho_l2 = np.linspace(0.6, 0.95, 3)
-	rho_l = np.concatenate((rho_l1, rho_l2), axis = 0)	
+	rho_l = np.concatenate((rho_l1, rho_l2), axis = 0)
 	max_persons = 1000
 	sims = 30
 	truncation = 300
@@ -272,7 +272,7 @@ if __name__ == "__main__":
 	data.to_csv("D124-p{}-t{}-sims{}_2.csv".format(max_persons, truncation, sims))
 	plt.legend(fontsize=16)
 
-	# M/LT/n queue 
+	# M/LT/n queue
 	plt.figure()
 	data = compute_avg_wt(servers_l, rho_l, max_persons, sims, serv_t_dist = "LT")
 	data.to_csv("LT124-p{}-t{}-sims{}_2.csv".format(max_persons, truncation, sims))
@@ -298,4 +298,3 @@ if __name__ == "__main__":
 	wt_distribution(servers, rho_l, max_persons, sims, serv_t_dist = "M")
 	plt.legend(fontsize=16)
 	plt.show()
-
